@@ -1,0 +1,436 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Arabic WordWeb</title>-->
+
+<!--    &lt;!&ndash; Tailwind CSS CDN for styling &ndash;&gt;-->
+<!--    <script src="https://cdn.tailwindcss.com"></script>-->
+
+<!--    &lt;!&ndash; Inter font from Google Fonts for better typography &ndash;&gt;-->
+<!--    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">-->
+
+<!--    &lt;!&ndash; FontAwesome for the search icon &ndash;&gt;-->
+<!--    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">-->
+
+<!--    <style>-->
+<!--        /* Basic styling for the body to ensure full height and centering */-->
+<!--        body {-->
+<!--            font-family: 'Inter', sans-serif;-->
+<!--            margin: 0;-->
+<!--            padding: 0;-->
+<!--            display: flex;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            min-height: 100vh;-->
+<!--            background-color: #f0f4f8;-->
+<!--        }-->
+
+<!--        /* Responsive layout for the main container */-->
+<!--        .main-container {-->
+<!--            width: 100%;-->
+<!--            max-width: 800px;-->
+<!--            padding: 1.5rem;-->
+<!--        }-->
+
+<!--        /* Basic card styling with shadow and rounded corners */-->
+<!--        .card {-->
+<!--            background-color: #ffffff;-->
+<!--            border-radius: 1rem;-->
+<!--            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);-->
+<!--            padding: 2rem;-->
+<!--        }-->
+
+<!--        /* Styles for the loading animation */-->
+<!--        .loader {-->
+<!--            border: 4px solid rgba(0, 0, 0, 0.1);-->
+<!--            border-left-color: #3b82f6;-->
+<!--            border-radius: 50%;-->
+<!--            width: 2rem;-->
+<!--            height: 2rem;-->
+<!--            animation: spin 1s linear infinite;-->
+<!--        }-->
+
+<!--        @keyframes spin {-->
+<!--            to {-->
+<!--                transform: rotate(360deg);-->
+<!--            }-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body class="bg-gray-100 flex items-center justify-center min-h-screen">-->
+
+<!--    <div id="app-container" class="main-container">-->
+<!--        &lt;!&ndash; The main application content will be rendered here &ndash;&gt;-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; The main application script &ndash;&gt;-->
+<!--    <script type="module">-->
+<!--        // Ensure the entire application logic is self-contained within this script-->
+<!--        // This is a common pattern for modern web development-->
+
+<!--        // A simple state object to manage the application's UI-->
+<!--        const state = {-->
+<!--            loading: false,-->
+<!--            initialLoad: true,-->
+<!--            error: null,-->
+<!--            content: null,-->
+<!--        };-->
+
+<!--        const appContainer = document.getElementById('app-container');-->
+
+<!--        // Function to render the UI based on the current state-->
+<!--        function render() {-->
+<!--            if (state.error) {-->
+<!--                appContainer.innerHTML = `-->
+<!--                    <div class="card p-8 text-center text-red-500">-->
+<!--                        <h2 class="text-2xl font-bold mb-4">Error</h2>-->
+<!--                        <p class="text-md">${state.error}</p>-->
+<!--                    </div>-->
+<!--                `;-->
+<!--            } else if (state.loading) {-->
+<!--                appContainer.innerHTML = `-->
+<!--                    <div class="flex flex-col items-center justify-center h-64">-->
+<!--                        <div class="loader"></div>-->
+<!--                        <p class="mt-4 text-gray-600">Loading...</p>-->
+<!--                    </div>-->
+<!--                `;-->
+<!--            } else {-->
+<!--                appContainer.innerHTML = `-->
+<!--                    <div class="card">-->
+<!--                        <div class="flex flex-col items-center">-->
+<!--                            <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-6">Arabic WordWeb</h1>-->
+<!--                            <p class="text-center text-gray-600 mb-8">-->
+<!--                                Enter an Arabic word below to find its root, translation, and more.-->
+<!--                            </p>-->
+<!--                            <div class="w-full relative">-->
+<!--                                <input-->
+<!--                                    id="arabic-input"-->
+<!--                                    type="text"-->
+<!--                                    placeholder="اكتب كلمة عربية..."-->
+<!--                                    class="w-full px-5 py-3 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-right text-lg pr-12"-->
+<!--                                    dir="rtl"-->
+<!--                                    lang="ar"-->
+<!--                                />-->
+<!--                                <button id="search-button" class="absolute inset-y-0 left-0 flex items-center pl-3 pr-2 rounded-full">-->
+<!--                                    <i class="fas fa-search text-gray-400"></i>-->
+<!--                                </button>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                        <div id="results-container" class="mt-8">-->
+<!--                            &lt;!&ndash; Results will be displayed here &ndash;&gt;-->
+<!--                            ${state.content ? formatResults(state.content) : ''}-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                `;-->
+
+<!--                // Add event listener to the search button and input field-->
+<!--                const searchButton = document.getElementById('search-button');-->
+<!--                const arabicInput = document.getElementById('arabic-input');-->
+<!--                searchButton.addEventListener('click', handleSearch);-->
+<!--                arabicInput.addEventListener('keypress', (e) => {-->
+<!--                    if (e.key === 'Enter') {-->
+<!--                        handleSearch();-->
+<!--                    }-->
+<!--                });-->
+<!--            }-->
+<!--        }-->
+
+<!--        // Function to format the JSON data into HTML-->
+<!--        function formatResults(data) {-->
+<!--            if (!data) return '';-->
+<!--            const { root_word, root_word_english, synonyms, antonyms, example_sentences, derivations, cultural_notes } = data;-->
+
+<!--            return `-->
+<!--                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-800">-->
+<!--                    <div>-->
+<!--                        <h3 class="text-xl font-bold border-b-2 border-blue-200 pb-2 mb-4">Root Word</h3>-->
+<!--                        <div class="text-lg">-->
+<!--                            <p class="mb-1"><span class="font-semibold">Arabic:</span> ${root_word}</p>-->
+<!--                            <p><span class="font-semibold">English:</span> ${root_word_english}</p>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                    ${synonyms && synonyms.length > 0 ? `-->
+<!--                    <div>-->
+<!--                        <h3 class="text-xl font-bold border-b-2 border-blue-200 pb-2 mb-4">Synonyms</h3>-->
+<!--                        <ul class="list-disc list-inside">-->
+<!--                            ${synonyms.map(s => `<li>${s.arabic} <span class="text-gray-500">(${s.english})</span></li>`).join('')}-->
+<!--                        </ul>-->
+<!--                    </div>-->
+<!--                    ` : ''}-->
+<!--                    ${antonyms && antonyms.length > 0 ? `-->
+<!--                    <div>-->
+<!--                        <h3 class="text-xl font-bold border-b-2 border-blue-200 pb-2 mb-4">Antonyms</h3>-->
+<!--                        <ul class="list-disc list-inside">-->
+<!--                            ${antonyms.map(a => `<li>${a.arabic} <span class="text-gray-500">(${a.english})</span></li>`).join('')}-->
+<!--                        </ul>-->
+<!--                    </div>-->
+<!--                    ` : ''}-->
+<!--                </div>-->
+<!--                ${example_sentences && example_sentences.length > 0 ? `-->
+<!--                <div class="mt-8">-->
+<!--                    <h3 class="text-xl font-bold border-b-2 border-blue-200 pb-2 mb-4">Example Sentences</h3>-->
+<!--                    <div class="space-y-4">-->
+<!--                        ${example_sentences.map(e => `-->
+<!--                            <div>-->
+<!--                                <p class="text-lg font-medium text-right" dir="rtl">${e.arabic}</p>-->
+<!--                                <p class="text-gray-600 pl-4">${e.english}</p>-->
+<!--                            </div>-->
+<!--                        `).join('')}-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                ` : ''}-->
+<!--                ${derivations && derivations.length > 0 ? `-->
+<!--                <div class="mt-8">-->
+<!--                    <h3 class="text-xl font-bold border-b-2 border-blue-200 pb-2 mb-4">Derived Forms</h3>-->
+<!--                    <ul class="list-disc list-inside">-->
+<!--                        ${derivations.map(d => `<li>${d.arabic} <span class="text-gray-500">(${d.english})</span></li>`).join('')}-->
+<!--                    </ul>-->
+<!--                </div>-->
+<!--                ` : ''}-->
+<!--                ${cultural_notes ? `-->
+<!--                <div class="mt-8">-->
+<!--                    <h3 class="text-xl font-bold border-b-2 border-blue-200 pb-2 mb-4">Cultural Notes</h3>-->
+<!--                    <p class="text-gray-700 leading-relaxed">${cultural_notes}</p>-->
+<!--                </div>-->
+<!--                ` : ''}-->
+<!--            `;-->
+<!--        }-->
+
+<!--        // Function to handle the search logic and API call-->
+<!--        async function handleSearch() {-->
+<!--            const arabicWord = document.getElementById('arabic-input').value;-->
+
+<!--            if (!arabicWord) {-->
+<!--                state.error = "Please enter an Arabic word to search.";-->
+<!--                render();-->
+<!--                return;-->
+<!--            }-->
+
+<!--            // Set loading state and clear previous content-->
+<!--            state.loading = true;-->
+<!--            state.initialLoad = false;-->
+<!--            state.content = null;-->
+<!--            state.error = null;-->
+<!--            render();-->
+
+<!--            try {-->
+<!--                // The prompt for the Gemini API to get a JSON response-->
+<!--                const prompt = `For the Arabic word '${arabicWord.trim()}', provide its root word and its English translation, a list of up to 5 synonyms with their English translations (if they are close enough in meaning), a list of up to 3 antonyms with their English translations (if they are opposite enough in meaning), three distinct example sentences using the word, each with its English translation.-->
+<!--                Additionally, provide up to 3 common derived forms or verb conjugations of the word with their English translations, and a brief paragraph (1-3 sentences) on its cultural context or specific usage nuances.-->
+<!--                Ensure the output is a JSON object with keys: \`root_word\` (string), \`root_word_english\` (string), \`synonyms\` (array of objects with 'arabic' and 'english' keys), \`antonyms\` (array of objects with 'arabic' and 'english' keys), \`example_sentences\` (array of objects with 'arabic' and 'english' keys), \`derivations\` (array of objects with 'arabic' and 'english' keys), and \`cultural_notes\` (string).`;-->
+
+<!--                // The fetch call to your Flask backend-->
+<!--                const response = await fetch('/api/data', {-->
+<!--                    method: 'POST',-->
+<!--                    headers: {-->
+<!--                        'Content-Type': 'application/json',-->
+<!--                    },-->
+<!--                    body: JSON.stringify({ prompt: prompt }),-->
+<!--                });-->
+
+<!--                // Check for a successful response from the server-->
+<!--                if (!response.ok) {-->
+<!--                    const errorData = await response.json();-->
+<!--                    throw new Error(errorData.error || 'Server responded with an error.');-->
+<!--                }-->
+
+<!--                // Parse the JSON data from the backend-->
+<!--                const data = await response.json();-->
+<!--                state.content = data;-->
+
+<!--            } catch (error) {-->
+<!--                // The 'catch' block to handle any errors that occur-->
+<!--                console.error("Fetch error:", error);-->
+<!--                state.error = `Could not get data. Please check the word and try again. Error: ${error.message}`;-->
+<!--            } finally {-->
+<!--                // This block runs whether there was an error or not-->
+<!--                state.loading = false;-->
+<!--                render();-->
+<!--            }-->
+<!--        }-->
+
+<!--        // Initial render on page load-->
+<!--        window.onload = function() {-->
+<!--            render();-->
+<!--        }-->
+<!--    </script>-->
+<!--</body>-->
+<!--&lt;!&ndash;</html>-->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arabic WordWeb</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f4f8;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8 font-sans flex flex-col items-center justify-center">
+        <div class="bg-white rounded-xl shadow-2xl p-6 sm:p-10 w-full max-w-2xl transform transition-all duration-300 hover:scale-[1.01]">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-center text-gray-800 mb-6 font-inter">
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                    Arabic WordWeb
+                </span>
+            </h1>
+            <p class="text-center text-gray-600 mb-8 text-lg">
+                Enter an Arabic word to find its root, synonyms, antonyms, and example sentences.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                <input
+                    id="arabic-input"
+                    type="text"
+                    class="flex-grow p-3 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg text-right"
+                    placeholder="أدخل كلمة عربية هنا"
+                    dir="rtl"
+                />
+                <button
+                    id="search-button"
+                    class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg shadow-md hover:from-blue-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-all duration-200 text-lg font-semibold">
+                    بحث
+                </button>
+
+            </div>
+            <div id="appa-container"></div>
+            <div id="results-container" class="mt-8 space-y-6 text-gray-700"></div>
+        </div>
+    </div>
+    <script>
+        function formatResults(data, arabicWord) {
+            return `
+                ${arabicWord ? `
+                <div class="bg-blue-100 p-4 rounded-lg shadow-inner border border-blue-200">
+                    <h3 class="text-xl font-semibold text-blue-800 mb-2">الكلمة التي تم البحث عنها (Searched Word):</h3>
+                    <p class="text-lg font-medium text-right" dir="rtl">${arabicWord}</p>
+                </div>
+                ` : ''}
+                <div class="bg-blue-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-semibold text-blue-800 mb-2">الكلمة الجذرية (Root Word):</h3>
+                    <p class="text-lg font-medium text-right" dir="rtl">${data.root_word}</p>
+                    <p class="text-md text-gray-600 text-right" dir="ltr">${data.root_word_english}</p>
+                </div>
+                ${data.synonyms && data.synonyms.length ? `
+                <div class="bg-green-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">المرادفات (Synonyms):</h3>
+                    <ul class="list-disc list-inside text-right space-y-1" dir="rtl">
+                        ${data.synonyms.map(s => `<li class="text-lg">${s.arabic} <span dir="ltr">(${s.english})</span></li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                ${data.antonyms && data.antonyms.length ? `
+                <div class="bg-red-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-semibold text-red-800 mb-2">المتضادات (Antonyms):</h3>
+                    <ul class="list-disc list-inside text-right space-y-1" dir="rtl">
+                        ${data.antonyms.map(a => `<li class="text-lg">${a.arabic} <span dir="ltr">(${a.english})</span></li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                ${data.example_sentences && data.example_sentences.length ? `
+                <div class="bg-purple-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-semibold text-purple-800 mb-2">جمل أمثلة (Example Sentences):</h3>
+                    <ul class="list-decimal list-inside text-right space-y-2" dir="rtl">
+                        ${data.example_sentences.map(e => `
+                        <li class="text-lg">
+                            ${e.arabic}
+                            <p class="text-md text-gray-600" dir="ltr">${e.english}</p>
+                        </li>
+                        `).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                ${data.derivations && data.derivations.length ? `
+                <div class="bg-yellow-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-semibold text-yellow-800 mb-2">✨ تصريفات و مشتقات الكلمة (Word Derivations/Conjugations):</h3>
+                    <ul class="list-disc list-inside text-right space-y-1" dir="rtl">
+                        ${data.derivations.map(d => `<li class="text-lg">${d.arabic} <span dir="ltr">(${d.english})</span></li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+                ${data.cultural_notes ? `
+                <div class="bg-indigo-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-semibold text-indigo-800 mb-2">✨ ملاحظات ثقافية واستخدامية (Cultural Context/Usage Notes):</h3>
+                    <p class="text-lg text-right" dir="rtl">${data.cultural_notes}</p>
+                </div>
+                ` : ''}
+            `;
+        }
+
+        document.getElementById('search-button').addEventListener('click', handleSearch);
+        document.getElementById('arabic-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') handleSearch();
+        });
+
+        async function handleSearch() {
+            const arabicWord = document.getElementById('arabic-input').value.trim();
+            const errorContainer = document.getElementById('error-container');
+            const resultsContainer = document.getElementById('results-container');
+            errorContainer.innerHTML = "";
+            resultsContainer.innerHTML = "";
+
+            if (!arabicWord) {
+                errorContainer.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+                        <strong class="font-bold">Error: </strong>
+                        <span class="block sm:inline">Please enter an Arabic word.</span>
+                    </div>
+                `;
+                return;
+            }
+
+            // Show loading spinner
+            resultsContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-32">
+                    <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="mt-4 text-gray-600">Loading...</p>
+                </div>`;
+
+            // Use your backend logic!
+            try {
+                const prompt = `For the Arabic word '${arabicWord}', provide its root word and its English translation, a list of up to 5 synonyms with their English translations (if they are close enough in meaning), a list of up to 3 antonyms with their English translations (if they are opposite enough in meaning), three distinct example sentences using the word, each with its English translation.
+                Additionally, provide up to 3 common derived forms or verb conjugations of the word with their English translations, and a brief paragraph (1-3 sentences) on its cultural context or specific usage nuances.
+                Ensure the output is a JSON object with keys: root_word (string), root_word_english (string), synonyms (array of objects with 'arabic' and 'english' keys), antonyms (array of objects with 'arabic' and 'english' keys), example_sentences (array of objects with 'arabic' and 'english' keys), derivations (array of objects with 'arabic' and 'english' keys), and cultural_notes (string).`;
+
+                const response = await fetch('/api/data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Server responded with an error.');
+                }
+
+                const data = await response.json();
+                resultsContainer.innerHTML = formatResults(data, arabicWord);
+
+            } catch (error) {
+                errorContainer.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+                        <strong class="font-bold">Error: </strong>
+                        <span class="block sm:inline">Could not get data. Please check the word and try again. Error: ${error.message}</span>
+                    </div>
+                `;
+                resultsContainer.innerHTML = "";
+            }
+        }
+    </script>
+</body>
+</html>
