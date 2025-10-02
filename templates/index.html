@@ -406,8 +406,10 @@
                 const prompt = `For the Arabic word '${arabicWord}', provide its root word and its English translation, a list of up to 5 synonyms with their English translations (if they are close enough in meaning), a list of up to 3 antonyms with their English translations (if they are opposite enough in meaning), three distinct example sentences using the word, each with its English translation.
                 Additionally, provide up to 3 common derived forms or verb conjugations of the word with their English translations, and a brief paragraph (1-3 sentences) on its cultural context or specific usage nuances.
                 Ensure the output is a JSON object with keys: root_word (string), root_word_english (string), synonyms (array of objects with 'arabic' and 'english' keys), antonyms (array of objects with 'arabic' and 'english' keys), example_sentences (array of objects with 'arabic' and 'english' keys), derivations (array of objects with 'arabic' and 'english' keys), and cultural_notes (string).`;
-
-                const response = await fetch('/api/data', {
+                
+                
+                const apiUrl = window.location.origin + '/api/data';
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt: prompt }),
