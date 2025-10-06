@@ -29,16 +29,23 @@ def get_data():
     It takes a prompt from the frontend, sends it to the Gemini API,
     and returns a JSON response.
     """
+    print("--- API ROUTE HIT: /api/data ---")
     gm_api_key = os.environ.get('GM_API_KEY')
     if not gm_api_key:
+        print("ERROR: API key not found.")
         return jsonify({"error": "API key not found in environment variables."}), 500
 
     if not request.json:
+        print("ERROR: Request body was not JSON.")
         return jsonify({"error": "Request body must be JSON."}), 400
 
     user_prompt = request.json.get('prompt')
     if not user_prompt:
+        print("ERROR: Prompt missing from request.")
         return jsonify({"error": "No 'prompt' field in the request body."}), 400
+
+    # 2. LOG: Print the prompt received from the frontend.
+    print(f"PROMPT RECEIVED: {user_prompt}")
 
     # The URL for the Gemini API
     url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gm_api_key}'
@@ -55,7 +62,7 @@ def get_data():
             "responseMimeType": "application/json"
         }
     }
-
+    print(f"message reached{user_prompt}")
     try:
         # Make the request to the Gemini API
         response = requests.post(url, json=payload)
@@ -65,10 +72,18 @@ def get_data():
 
         if 'candidates' in gemini_response_data and len(gemini_response_data['candidates']) > 0:
             generated_content = gemini_response_data['candidates'][0]['content']['parts'][0]['text']
+            # 3. LOG: Print the raw JSON output from the Gemini API.
+            print(f"GEMINI RAW JSON RESPONSE (Start): {generated_content[:500]}...")
+
             # The API returns a string that is a JSON object, so we need to parse it.
             parsed_data = json.loads(generated_content)
             return jsonify(parsed_data)
+
+            # 3. LOG: Print the raw JSON output from the Gemini API.
+            print(f"GEMINI RAW JSON RESPONSE: {generated_content[:200]}...")  # Print first 200 chars for brevity
+
         else:
+            print("ERROR: Gemini API returned no candidates.")
             return jsonify({"error": "Gemini API did not return a valid response."}), 500
 
     except requests.exceptions.RequestException as e:
