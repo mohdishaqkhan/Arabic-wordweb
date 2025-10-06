@@ -30,7 +30,7 @@ def get_data():
     and returns a JSON response.
     """
     print("--- API ROUTE HIT: /api/data ---")
-    gm_api_key = os.environ.get('gm_api_key')
+    gm_api_key = os.environ.get('GM_API_KEY')
     if not gm_api_key:
         print("ERROR: API key not found.")
         return jsonify({"error": "API key not found in environment variables."}), 500
