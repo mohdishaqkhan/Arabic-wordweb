@@ -1,24 +1,21 @@
 import os
 import json
 import requests
-from flask import Flask, jsonify, request, render_template # Added render_template
-from dotenv import load_dotenv
+from flask import Flask, jsonify, request, render_template
+# REMOVED: from dotenv import load_dotenv
 from flask_cors import CORS
 
-load_dotenv()
+# REMOVED: load_dotenv()
 
 app = Flask(__name__)
-# Enable CORS for all routes for development.
+# Enable CORS for all routes
 CORS(app)
 
 
-# The new route to serve the index.html file.
-# When a user visits the main URL (e.g., http://127.0.0.1:5000/),
-# this function will be executed.
 @app.route('/')
 def serve_index():
     """Serves the index.html file."""
-    # This renders the index.html file located in the 'templates' folder.
+    # Assumes index.html is in a 'templates' folder
     return render_template('index.html')
 
 
@@ -26,15 +23,19 @@ def serve_index():
 def get_data():
     """
     Handles POST requests to the /api/data endpoint.
-    It takes a prompt from the frontend, sends it to the Gemini API,
-    and returns a JSON response.
+    Retrieves data from the Gemini API using a strict JSON schema.
     """
+    # 1. LOG: Confirm the API route was successfully hit.
     print("--- API ROUTE HIT: /api/data ---")
+
+    # CRITICAL: Get the API Key directly from the environment (Railway handles this)
     gm_api_key = os.environ.get('GM_API_KEY')
     if not gm_api_key:
-        print("ERROR: API key not found.")
+        print("ERROR: API key not found. Ensure 'GM_API_KEY' is set in Railway Variables.")
+        # This error is now for logic only, not deployment crash
         return jsonify({"error": "API key not found in environment variables."}), 500
 
+    # Input validation
     if not request.json:
         print("ERROR: Request body was not JSON.")
         return jsonify({"error": "Request body must be JSON."}), 400
@@ -42,61 +43,87 @@ def get_data():
     user_prompt = request.json.get('prompt')
     if not user_prompt:
         print("ERROR: Prompt missing from request.")
-        return jsonify({"error": "No 'prompt' field in the request body."}), 400
+        return jsonify({"error": "Missing 'prompt' in request body."}), 400
 
     # 2. LOG: Print the prompt received from the frontend.
     print(f"PROMPT RECEIVED: {user_prompt}")
 
-    # The URL for the Gemini API
-    url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gm_api_key}'
+    # Use the reliable Gemini 2.5 Flash model
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key={gm_api_key}"
 
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": user_prompt}
-                ]
-            }
-        ],
-        "generationConfig": {
-            "responseMimeType": "application/json"
+    # Define the JSON schema for the dictionary output (CRITICAL for frontend parsing)
+    json_schema = {
+        "type": "OBJECT",
+        "properties": {
+            "definition_arabic": {"type": "STRING"},
+            "definition_english": {"type": "STRING"},
+            "root_word_arabic": {"type": "STRING"},
+            "root_word_english": {"type": "STRING"},
+            "synonyms": {
+                "type": "ARRAY",
+                "items": {"type": "OBJECT", "properties": {"arabic": {"type": "STRING"}, "english": {"type": "STRING"}}}
+            },
+            "antonyms": {
+                "type": "ARRAY",
+                "items": {"type": "OBJECT", "properties": {"arabic": {"type": "STRING"}, "english": {"type": "STRING"}}}
+            },
+            "example_sentences": {
+                "type": "ARRAY",
+                "items": {"type": "OBJECT", "properties": {"arabic": {"type": "STRING"}, "english": {"type": "STRING"}}}
+            },
+            "derivations": {
+                "type": "ARRAY",
+                "items": {"type": "OBJECT", "properties": {"arabic": {"type": "STRING"}, "english": {"type": "STRING"}}}
+            },
+            "cultural_notes": {"type": "STRING"}
         }
     }
-    print(f"message reached{user_prompt}")
+
+    # System instruction to guide the model's behavior
+    system_instruction = (
+        "You are an expert Arabic linguist and lexicographer. "
+        "Provide a comprehensive, structured dictionary entry for the user's word. "
+        "Your response MUST be a single JSON object strictly following the provided schema. "
+        "Do not include any text outside of the JSON object."
+    )
+
+    payload = {
+        "contents": [{"parts": [{"text": user_prompt}]}],
+        "systemInstruction": {"parts": [{"text": system_instruction}]},
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": json_schema
+        }
+    }
+
     try:
-        # Make the request to the Gemini API
         response = requests.post(url, json=payload)
-        response.raise_for_status()  # This will raise an HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()
 
         gemini_response_data = response.json()
 
         if 'candidates' in gemini_response_data and len(gemini_response_data['candidates']) > 0:
             generated_content = gemini_response_data['candidates'][0]['content']['parts'][0]['text']
+
             # 3. LOG: Print the raw JSON output from the Gemini API.
             print(f"GEMINI RAW JSON RESPONSE (Start): {generated_content[:500]}...")
 
-            # The API returns a string that is a JSON object, so we need to parse it.
+            # Parse the generated JSON string
             parsed_data = json.loads(generated_content)
             return jsonify(parsed_data)
-
-            # 3. LOG: Print the raw JSON output from the Gemini API.
-            print(f"GEMINI RAW JSON RESPONSE: {generated_content[:200]}...")  # Print first 200 chars for brevity
-
         else:
-            print("ERROR: Gemini API returned no candidates.")
-            return jsonify({"error": "Gemini API did not return a valid response."}), 500
+            print(f"ERROR: Gemini API returned no candidates or an error: {gemini_response_data}")
+            return jsonify({"error": "Gemini API did not return content. Check the key and try a simpler word."}), 500
 
     except requests.exceptions.RequestException as e:
-        # Catches network-related errors during the request
-        print(f"Request to Gemini API failed: {e}")
-        return jsonify({"error": "Failed to connect to the Gemini API."}), 500
+        print(f"ERROR: Request to Gemini API failed: {e}")
+        return jsonify({"error": "Failed to connect to the Gemini API due to a network or rate limit error."}), 500
     except (KeyError, json.JSONDecodeError) as e:
-        # Catches errors if the JSON response is malformed or keys are missing
-        print(f"Error parsing Gemini response: {e}")
-        return jsonify({"error": "Invalid or malformed JSON response from Gemini API."}), 500
+        print(f"ERROR: Error parsing Gemini response JSON: {e}")
+        return jsonify({"error": "The Gemini API returned malformed JSON. Retrying may fix the issue."}), 500
 
 
 if __name__ == '__main__':
-    # Get the port from an environment variable, defaulting to 5000
+    # Use the PORT environment variable provided by Railway, defaulting to 5000
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
