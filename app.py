@@ -97,7 +97,7 @@ def get_data():
     }
 
     try:
-        response = requests.post(url, json=payload)
+        response = requests.post(url, json=payload, timeout=30)
         response.raise_for_status()
 
         gemini_response_data = response.json()
@@ -127,3 +127,4 @@ if __name__ == '__main__':
     # Use the PORT environment variable provided by Railway, defaulting to 5000
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=True)
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
