@@ -11,6 +11,13 @@ app = Flask(__name__)
 # Enable CORS for all routes
 CORS(app)
 
+import gc
+
+# Add this after your imports
+@app.after_request
+def after_request(response):
+    gc.collect()  # Force garbage collection after each request
+    return response
 
 @app.route('/')
 def serve_index():
@@ -92,7 +99,8 @@ def get_data():
         "systemInstruction": {"parts": [{"text": system_instruction}]},
         "generationConfig": {
             "responseMimeType": "application/json",
-            "responseSchema": json_schema
+            "responseSchema": json_schema,
+            "maxOutputTokens": 1000  # Limit response size
         }
     }
 
