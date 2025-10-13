@@ -5,7 +5,7 @@ from flask import Flask, jsonify, request, render_template
 # REMOVED: from dotenv import load_dotenv
 from flask_cors import CORS
 
-# REMOVED: load_dotenv()
+# REMOVED: load_dotenv() ,reallY?
 
 app = Flask(__name__)
 # Enable CORS for all routes
@@ -25,6 +25,9 @@ def serve_index():
     # Assumes index.html is in a 'templates' folder
     return render_template('index.html')
 
+@app.route('/health')
+def health_check():
+    return jsonify({"status": "healthy", "message": "Server is running"})
 
 @app.route('/api/data', methods=['POST'])
 def get_data():
@@ -34,6 +37,10 @@ def get_data():
     """
     # 1. LOG: Confirm the API route was successfully hit.
     print("--- API ROUTE HIT: /api/data ---")
+    # Log request details
+    print(f"📨 BACKEND: Request method: {request.method}")
+    print(f"📨 BACKEND: Request headers: {dict(request.headers)}")
+    print(f"📨 BACKEND: Request content type: {request.content_type}")
 
     # CRITICAL: Get the API Key directly from the environment (Railway handles this)
     gm_api_key = os.environ.get('GM_API_KEY')
@@ -52,8 +59,6 @@ def get_data():
         print("ERROR: Prompt missing from request.")
         return jsonify({"error": "Missing 'prompt' in request body."}), 400
 
-    # 2. LOG: Print the prompt received from the frontend.
-    print(f"PROMPT RECEIVED: {user_prompt}")
 
     # Use the reliable Gemini 2.5 Flash model
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key={gm_api_key}"
@@ -105,10 +110,13 @@ def get_data():
     }
 
     try:
+        print("🌐 BACKEND: Sending request to Gemini API...")
         response = requests.post(url, json=payload, timeout=30)
         response.raise_for_status()
+        print(f"✅ BACKEND: Gemini API response status: {response.status_code}")
 
         gemini_response_data = response.json()
+        print("📄 BACKEND: Got response from Gemini API")
 
         if 'candidates' in gemini_response_data and len(gemini_response_data['candidates']) > 0:
             generated_content = gemini_response_data['candidates'][0]['content']['parts'][0]['text']
@@ -118,6 +126,7 @@ def get_data():
 
             # Parse the generated JSON string
             parsed_data = json.loads(generated_content)
+            print("🔄 BACKEND: Successfully parsed JSON, sending response to frontend")
             return jsonify(parsed_data)
         else:
             print(f"ERROR: Gemini API returned no candidates or an error: {gemini_response_data}")
@@ -134,5 +143,7 @@ def get_data():
 if __name__ == '__main__':
     # Use the PORT environment variable provided by Railway, defaulting to 5000
     port = int(os.environ.get('PORT', 10000))
+    print(f"🚀 Starting Flask app on port {port}")
+    print(f"🔑 API Key present: {bool(os.environ.get('GM_API_KEY'))}")
     app.run(host='0.0.0.0', port=port, debug=True)
     debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
