@@ -373,7 +373,33 @@
         document.getElementById('arabic-input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') handleSearch();
         });
+        console.log("🟢 Frontend: JavaScript loaded!");
 
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("🟢 Frontend: DOM fully loaded");
+
+    const searchBtn = document.getElementById('search-button');
+    const input = document.getElementById('arabic-input');
+
+    console.log("🔍 Frontend: Search button found:", !!searchBtn);
+    console.log("🔍 Frontend: Input field found:", !!input);
+
+    if (searchBtn) {
+        searchBtn.addEventListener('click', function() {
+            console.log("🟡 Frontend: Search button clicked!");
+            handleSearch();
+        });
+    }
+
+    if (input) {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                console.log("🟡 Frontend: Enter key pressed!");
+                handleSearch();
+            }
+        });
+    }
+});
         async function handleSearch() {
             const arabicWord = document.getElementById('arabic-input').value.trim();
             const errorContainer = document.getElementById('error-container');
