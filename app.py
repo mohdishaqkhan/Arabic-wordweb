@@ -12,6 +12,21 @@ app = Flask(__name__)
 CORS(app)
 
 import gc
+import sys
+import datetime
+
+
+def render_log(message):
+    """The least-bad option for Render"""
+    timestamp = datetime.datetime.now().isoformat()
+    full_message = f"[{timestamp}] {message}"
+
+    # Try everything
+    print(full_message, flush=True)
+    sys.stdout.write(full_message + "\n")
+    sys.stdout.flush()
+    sys.stderr.write(full_message + "\n")
+    sys.stderr.flush()
 
 
 # Add this after your imports
@@ -40,12 +55,8 @@ def get_data():
     Retrieves data from the Gemini API using a strict JSON schema.
     """
     # 1. LOG: Confirm the API route was successfully hit.
-    print("--- API ROUTE HIT: /api/data ---")
     print("--- API ROUTE HIT: /api/data ---", flush=True)
     # Log request details
-    print(f"📨 BACKEND: Request method: {request.method}")
-    print(f"📨 BACKEND: Request headers: {dict(request.headers)}")
-    print(f"📨 BACKEND: Request content type: {request.content_type}")
     print(f"📨 BACKEND: Request method: {request.method}", flush=True)
     print(f"📨 BACKEND: Request headers: {dict(request.headers)}", flush=True)
     print(f"📨 BACKEND: Request content type: {request.content_type}", flush=True)
@@ -66,13 +77,11 @@ def get_data():
 
     # Input validation
     if not request.json:
-        print("ERROR: Request body was not JSON.")
         print("ERROR: Request body was not JSON.", flush=True)
         return jsonify({"error": "Request body must be JSON."}), 400
 
     user_prompt = request.json.get('prompt')
     if not user_prompt:
-        print("ERROR: Prompt missing from request.")
         print("ERROR: Prompt missing from request.", flush=True)
         return jsonify({"error": "Missing 'prompt' in request body."}), 400
 
@@ -81,40 +90,34 @@ def get_data():
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key={gm_api_key}"
 
     try:
-        print("🌐 BACKEND: Sending request to Gemini API...")
         print("🌐 BACKEND: Sending request to Gemini API...", flush=True)
         response = requests.post(url, json=payload, timeout=30)
         response.raise_for_status()
-        print(f"✅ BACKEND: Gemini API response status: {response.status_code}")
         print(f"✅ BACKEND: Gemini API response status: {response.status_code}", flush=True)
 
         gemini_response_data = response.json()
-        print("📄 BACKEND: Got response from Gemini API")
         print("📄 BACKEND: Got response from Gemini API", flush=True)
 
         if 'candidates' in gemini_response_data and len(gemini_response_data['candidates']) > 0:
             generated_content = gemini_response_data['candidates'][0]['content']['parts'][0]['text']
 
             # 3. LOG: Print the raw JSON output from the Gemini API.
-            print(f"GEMINI RAW JSON RESPONSE (Start): {generated_content[:500]}...")
             print(f"GEMINI RAW JSON RESPONSE (Start): {generated_content[:500]}...", flush=True)
 
             # Parse the generated JSON string
             parsed_data = json.loads(generated_content)
             print("🔄 BACKEND: Successfully parsed JSON, sending response to frontend")
-            print("🔄 BACKEND: Successfully parsed JSON, sending response to frontend", flush=True)
             return jsonify(parsed_data)
         else:
-            print(f"ERROR: Gemini API returned no candidates or an error: {gemini_response_data}")
             print(f"ERROR: Gemini API returned no candidates or an error: {gemini_response_data}", flush=True)
             return jsonify({"error": "Gemini API did not return content. Check the key and try a simpler word."}), 500
 
     except requests.exceptions.RequestException as e:
-        print(f"ERROR: Request to Gemini API failed: {e}")
+
         print(f"ERROR: Request to Gemini API failed: {e}", flush=True)
         return jsonify({"error": "Failed to connect to the Gemini API due to a network or rate limit error."}), 500
     except (KeyError, json.JSONDecodeError) as e:
-        print(f"ERROR: Error parsing Gemini response JSON: {e}")
+
         print(f"ERROR: Error parsing Gemini response JSON: {e}", flush=True)
         return jsonify({"error": "The Gemini API returned malformed JSON. Retrying may fix the issue."}), 500
 
@@ -122,8 +125,7 @@ def get_data():
 if __name__ == '__main__':
     # Use the PORT environment variable provided by Railway, defaulting to 5000
     port = int(os.environ.get('PORT', 10000))
-    print(f"🚀 Starting Flask app on port {port}")
-    print(f"🔑 API Key present: {bool(os.environ.get('GM_API_KEY'))}")
+
     print(f"🚀 Starting Flask app on port {port}", flush=True)
     print(f"🔑 API Key present: {bool(os.environ.get('GM_API_KEY'))}", flush=True)
     app.run(host='0.0.0.0', port=port, debug=True)
