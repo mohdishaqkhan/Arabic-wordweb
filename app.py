@@ -2,10 +2,10 @@ import os
 import json
 import requests
 from flask import Flask, jsonify, request, render_template
-# REMOVED: from dotenv import load_dotenv
+from dotenv import load_dotenv
 from flask_cors import CORS
 
-# REMOVED: load_dotenv() ,reallY?
+load_dotenv()
 
 app = Flask(__name__)
 # Enable CORS for all routes
@@ -86,10 +86,21 @@ def get_data():
         print("ERROR: Prompt missing from request.", flush=True)
         return jsonify({"error": "Missing 'prompt' in request body."}), 400
 
-
     # Use the reliable Gemini 2.5 Flash model
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key={gm_api_key}"
-
+    url = (f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key="
+           f"{gm_api_key}")
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": user_prompt}
+                ]
+            }
+        ],
+        "generationConfig": {
+            "responseMimeType": "application/json"
+        }
+    }
     try:
         print("🌐 BACKEND: Sending request to Gemini API...", flush=True)
         response = requests.post(url, json=payload, timeout=30)
@@ -123,6 +134,8 @@ def get_data():
         return jsonify({"error": "The Gemini API returned malformed JSON. Retrying may fix the issue."}), 500
 
 
+debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+
 if __name__ == '__main__':
     # Use the PORT environment variable provided by Railway, defaulting to 5000
     port = int(os.environ.get('PORT', 10000))
@@ -130,4 +143,3 @@ if __name__ == '__main__':
     print(f"🚀 Starting Flask app on port {port}", flush=True)
     print(f"🔑 API Key present: {bool(os.environ.get('GM_API_KEY'))}", flush=True)
     app.run(host='0.0.0.0', port=port, debug=True)
-    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
